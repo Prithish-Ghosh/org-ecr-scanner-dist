@@ -98,5 +98,6 @@ pipx install --force \
   scan
 
 ## install via single command : 
+
 pipx install \
 "https://github.com/Prithish-Ghosh/org-ecr-scanner-dist/releases/download/v0.1.0/org_ecr_trivy_scanner-0.1.0-py3-none-any.whl"
