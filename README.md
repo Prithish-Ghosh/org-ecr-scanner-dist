@@ -97,7 +97,10 @@ pipx install --force \
 
   scan
 
-## install via single command : 
+## install via single command :  ubuntu / mac
 
-pipx install \
-"https://github.com/Prithish-Ghosh/org-ecr-scanner-dist/releases/download/v0.1.0/org_ecr_trivy_scanner-0.1.0-py3-none-any.whl"
+pipx install "https://raw.githubusercontent.com/Prithish-Ghosh/org-ecr-scanner-dist/main/release-assets/org_ecr_trivy_scanner-0.1.0-py3-none-any.whl%22
+ 
+pipx ensurepath
+ 
+export PATH="$HOME/.local/bin:$PATH"
