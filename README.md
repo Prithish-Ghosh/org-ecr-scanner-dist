@@ -74,3 +74,28 @@ Publish each reviewed version as a **new** release with exactly one `.whl` asset
 - This is Python packaging, **not source-code encryption**. A wheel normally contains readable `.py` files. Keeping the original source repository private limits access to the repository but does not make the installed implementation inaccessible.
 - `scan` relies on Trivy being installed for actual scans and on valid AWS credentials. It does not itself install Trivy or provision AWS IAM permissions.
 - This CLI is intended for authorized ECR repositories. JSON output may contain sensitive details; distribute reports through approved channels.
+
+## INSTALL VIA GH 
+gh auth login
+
+gh release view v0.1.0 \
+  -R Prithish-Ghosh/org-ecr-scanner-dist
+
+  d=$(mktemp -d) && gh release download v0.1.0 \
+  -R Prithish-Ghosh/org-ecr-scanner-dist \
+  -p '*.whl' -D "$d" \
+  && pipx install --force "$d"/*.whl
+
+  scan
+
+## INSTALL VIA WHL PACKAGE
+
+dOWNLOAD : WHL under assets 
+
+pipx install --force \
+  ~/Downloads/org_ecr_trivy_scanner-0.1.0-py3-none-any.whl
+
+  scan
+
+## install via single command : pipx install \
+  "https://github.com/Prithish-Ghosh/org-ecr-scanner-dist/releases/download/v0.1.0/org_ecr_trivy_scanner-0.1.0-py3-none-any.whl"
