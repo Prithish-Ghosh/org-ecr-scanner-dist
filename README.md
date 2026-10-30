@@ -1,110 +1,51 @@
-# Org ECR Trivy Scanner — Distribution Repository
-## INSTALL VIA WHL PACKAGE
+# Org Cloud Trivy Scanner — Distribution v0.2.0
 
-dOWNLOAD : WHL under assets 
+This repository distributes the **pre-built wheel** for the organization scanner. The code-maintainer repository is `org-ecr-scanner-source` and should remain restricted. This distribution repository may be made public for simpler installation, **but Python wheels contain inspectable `.py` source files**.
 
-pipx install --force \
-  ~/Downloads/org_ecr_trivy_scanner-0.1.0-py3-none-any.whl
-
-  scan
-
-## install via single command :  ubuntu / mac
-
-pipx install "https://raw.githubusercontent.com/Prithish-Ghosh/org-ecr-scanner-dist/main/release-assets/org_ecr_trivy_scanner-0.1.0-py3-none-any.whl%22
- 
-pipx ensurepath
- 
-export PATH="$HOME/.local/bin:$PATH"
-
-## if error as trivy , please install the trivy 
-
-sudo apt-get update
-sudo apt-get install -y wget gnupg
-
-wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key \
-  | gpg --dearmor \
-  | sudo tee /usr/share/keyrings/trivy.gpg > /dev/null
-
-echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb generic main" \
-  | sudo tee /etc/apt/sources.list.d/trivy.list
-
-sudo apt-get update
-sudo apt-get install -y trivy
-**Audience:** DevOps engineers. **Repository:** PRIVATE, accessible to the DevOps team. **Do not upload the implementation source code here.**
-
-This repository contains the installer, documentation and a staging copy of the prebuilt wheel. Publish the wheel as a **GitHub Release asset** (not a Git-tracked file). General DevOps staff should have **Read** access; only maintainers should have Write access. The source code lives in another, more restricted repository.
-
-## Maintainer: first-time GitHub setup - Prithish 
-
-3. Publish the staged wheel as a Release asset. From **this directory**:
+## Install from the v0.2.0 public GitHub release (no `gh` required)
 
 ```bash
-gh auth login  # once, if not already authenticated
-gh release create v0.1.0 \
-  release-assets/org_ecr_trivy_scanner-0.1.0-py3-none-any.whl \
-  --repo YOUR_ORG/org-ecr-scanner-dist \
-  --title 'Org ECR Trivy Scanner v0.1.0' \
-  --notes 'Private team installation package'
-```
-
-The `release-assets/*.whl` file is intentionally ignored by Git; it exists locally in the provided ZIP so it can be uploaded to the GitHub **Releases** page, but is **not** added by `git add .`.
-
-**GitHub website alternative:** Repo > **Releases** > **Draft a new release** > Tag `v0.1.0` > attach the wheel from `release-assets/` > Publish release. A public release is not necessary; keep the repo private.
-
-## DevOps team: one-command install (Linux / macOS shell)
-
-**One-time prerequisites:** Python 3.11+ recommended for current `pipx` releases (scanner itself supports Python 3.10+), [`pipx`](https://pipx.pypa.io/), [`gh`](https://cli.github.com/) authenticated using `gh auth login`, [`trivy`](https://trivy.dev/) available on PATH, and AWS profile/SSO credentials with ECR read permissions. The installation command below handles only the scanner package, not those prerequisites.
-
-Replace `YOUR_ORG` with the actual GitHub organization and share this command:
-
-```bash
-tmp="$(mktemp -d)" && gh release download -R YOUR_ORG/org-ecr-scanner-dist -p '*.whl' -D "$tmp" && pipx install --force "$tmp"/*.whl; status=$?; rm -rf -- "$tmp"; test "$status" -eq 0
-```
-
-This fetches the **latest release** asset using the authenticated `gh` CLI and installs it as the global `scan` command. The source repo is not involved, and users do not need its access.
-
-Alternatively, after checking out this distribution repository locally:
-
-```bash
-bash install.sh YOUR_ORG/org-ecr-scanner-dist
-```
-
-The helper performs the same download and installation and checks the prerequisites.
-
-## Usage
-
-```bash
+pipx install --force 'https://github.com/Prithish-Ghosh/org-ecr-scanner-dist/releases/download/v0.2.0/org_ecr_trivy_scanner-0.2.0-py3-none-any.whl'
 scan --version
-scan  # interactive AWS profile, region, repository and recent ECR image tag selection
-scan --profile cx-hr --region ap-south-1 \
-  --repository servicestation/servicestation-dev --tag dev-11 \
-  --non-interactive --output-dir ./security-reports
+scan
 ```
 
-Generated files include `vulnerability-report.pdf`, `trivy-results.json` and `scan-metadata.json`.
+Dependencies: Python 3.10+, pipx and Trivy executable on PATH; cloud authentication is required to access ECR or OCIR. `pipx` installs the scanner's Python SDK dependencies. `scan` chooses ECR or OCIR and supports multi-repository selection `1,3,5-7` or `all`.
 
-## Updates
+## ECR multi-repo example
 
-Publish each reviewed version as a **new** release with exactly one `.whl` asset, such as `v0.1.1`. Users can rerun the same one-line install command; it downloads the newest release. Use `pipx uninstall org-ecr-trivy-scanner` to uninstall.
+```bash
+scan --provider ecr --profile cx-hr --region ap-south-1 \
+  --repository servicestation/servicestation-dev,servicestation/servicestation-tenant-api \
+  --latest --non-interactive --output-dir ./reports
+```
 
-## Important limitations
+## Oracle OCIR example
 
-- Permission to read this distribution repo/release is required for `gh release download` to succeed. A private repository does not mean anonymous installs are possible.
-- This is Python packaging, **not source-code encryption**. A wheel normally contains readable `.py` files. Keeping the original source repository private limits access to the repository but does not make the installed implementation inaccessible.
-- `scan` relies on Trivy being installed for actual scans and on valid AWS credentials. It does not itself install Trivy or provision AWS IAM permissions.
-- This CLI is intended for authorized ECR repositories. JSON output may contain sensitive details; distribute reports through approved channels.
+OCI API/CLI profile in `~/.oci/config` is required for repository discovery. Private image scanning also requires an OCI **auth token**, separate from API key credentials.
 
-## INSTALL VIA GH 
-gh auth login
+```bash
+export OCI_OCIR_USERNAME='<namespace>/<username>'
+read -rs -p 'OCI auth token: ' OCI_OCIR_AUTH_TOKEN; echo
+export OCI_OCIR_AUTH_TOKEN
 
-gh release view v0.1.0 \
-  -R Prithish-Ghosh/org-ecr-scanner-dist
+scan --provider ocir --oci-profile DEFAULT --region me-jeddah-1 \
+  --oci-compartment ocid1.compartment.oc1..REPLACE \
+  --repository backend,frontend --latest --non-interactive
 
-  d=$(mktemp -d) && gh release download v0.1.0 \
-  -R Prithish-Ghosh/org-ecr-scanner-dist \
-  -p '*.whl' -D "$d" \
-  && pipx install --force "$d"/*.whl
+unset OCI_OCIR_AUTH_TOKEN
+```
 
-  scan
+For an interactive run, simply run `scan` and select Oracle OCIR; it securely prompts for any missing registry credentials.
 
+## Maintainer: publishing v0.2.0 via GitHub UI
 
+1. Upload updated README and installer files to the distribution repo as needed.
+2. Navigate to **Releases → Draft a new release**.
+3. Create tag **`v0.2.0`** based on `main` (do **not** overwrite `v0.1.0`).
+4. Attach `release-assets/org_ecr_trivy_scanner-0.2.0-py3-none-any.whl` as a **release asset** and publish.
+5. Open the public release URL in an incognito browser and test the installation command above.
+
+A staging copy of the wheel is included under `release-assets/` in the ZIP. You may upload it to the release via the website; keeping wheel copies tracked in Git is not necessary.
+
+Security: users need AWS IAM or OCI IAM pull-only permissions. Secret scanning JSON can contain sensitive match data; keep reports private. This CLI is a vulnerability scanner, not a substitute for patch testing or VAPT.
